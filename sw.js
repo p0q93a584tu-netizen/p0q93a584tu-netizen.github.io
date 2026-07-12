@@ -2,9 +2,6 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       try {
-        if (new URL(event.request.url).pathname === "/") {
-          maybeFlushCache();
-        }
         let req = await caches.match(event.request);
         if (req) {
           let headers = new Headers(req.headers);
@@ -60,7 +57,17 @@ self.addEventListener("install", (event) => {
 
 async function maybeFlushCache() {
   const cachedmilestone = await caches.match("/MILESTONE");
-  const response = await fetch("/MILESTONE");
+  let response;
+  try {
+    response = await fetch("/MILESTONE");
+  } catch (e) {
+    console.log("MILESTONE fetch failed, skipping flush check", e);
+    return;
+  }
+  if (!response.ok) {
+    console.log("MILESTONE fetch not ok, skipping flush check", response.status);
+    return;
+  }
   const milestone = await response.text();
   if (cachedmilestone) {
     const cachedmilestoneText = await cachedmilestone.text();
